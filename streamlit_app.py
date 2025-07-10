@@ -1,6 +1,6 @@
 import streamlit as st
 from snowflake.snowpark.functions import col
-import requests
+
 # UI setup
 st.title(":cup_with_straw: Customize Your Smoothie :cup_with_straw:")
 st.write("Choose the fruits you want in your custom Smoothie")
@@ -47,5 +47,4 @@ if ingredients_list:
         session.sql(my_insert_stmt).collect()
         st.success('Your Smoothie is ordered! ✅')
 
-
-
+import requests
