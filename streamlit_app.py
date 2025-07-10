@@ -16,13 +16,10 @@ cnx = st.connection("snowflake")
 session = cnx.session()
 my_dataframe = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"), col('SEARCH_ON'))
 
-# Convert the Snowpark DataFrame to a Pandas DataFrame
+# Convert Snowpark DataFrame to Pandas DataFrame
 pd_df = my_dataframe.to_pandas()
 
-# Optional: view the available fruit options
-st.dataframe(pd_df, use_container_width=True)
-
-# Ingredient selection (make sure this uses pd_df['FRUIT_NAME'])
+# Ingredient selection (clean list from Pandas df)
 ingredients_list = st.multiselect(
     'Choose up to 5 ingredients:',
     pd_df['FRUIT_NAME'].tolist(),
@@ -36,21 +33,23 @@ if ingredients_list:
     for fruit_chosen in ingredients_list:
         ingredients_string += fruit_chosen + ' '
 
-        # Get the corresponding SEARCH_ON value from pd_df
+        # Get SEARCH_ON value for selected fruit
         search_on = pd_df.loc[pd_df['FRUIT_NAME'] == fruit_chosen, 'SEARCH_ON'].iloc[0]
 
-        # Show section header for this fruit
-        st.subheader(f"{fruit_chosen} Nutrition Information")
-
-        # Fetch nutrition info from external API
-        smoothiefroot_response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_on}")
-
-        if smoothiefroot_response.status_code == 200:
-            response_json = smoothiefroot_response.json()
-            nutrition_df = pd.DataFrame(response_json)
-            st.dataframe(data=nutrition_df, use_container_width=True)
+        if pd.isna(search_on) or search_on == 'None':
+            st.warning(f"No nutrition information available for {fruit_chosen}.")
         else:
-            st.error(f"Failed to fetch nutrition info for {fruit_chosen}.")
+            st.subheader(f"{fruit_chosen} Nutrition Information")
+
+            # API call for nutrition info
+            smoothiefroot_response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_on}")
+
+            if smoothiefroot_response.status_code == 200:
+                response_json = smoothiefroot_response.json()
+                nutrition_df = pd.DataFrame(response_json)
+                st.dataframe(data=nutrition_df, use_container_width=True)
+            else:
+                st.error(f"Failed to fetch nutrition info for {fruit_chosen}.")
 
     # Trim trailing space from ingredient string
     ingredients_string = ingredients_string.strip()
